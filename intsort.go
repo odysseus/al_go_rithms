@@ -11,9 +11,13 @@ func main() {
 
   fmt.Println("Hello, world!")
 
-  fmt.Println(compareSort("Shell", "Merge", 100000, 100))
+  x := randomArray(1000000, 1000000)
+  QuickSort(x)
+  fmt.Println(x[0:20])
 
-	fmt.Printf("Took: %0.3fs\n", time.Since(t).Seconds())
+  fmt.Println(compareSort("Quick", "Merge", 1000000, 1))
+
+  fmt.Printf("Took: %0.3fs\n", time.Since(t).Seconds())
 }
 
 func SelectionSort(a []int) {
@@ -38,6 +42,19 @@ func InsertionSort(a []int) {
   }
 }
 
+func BubbleSort(a []int) {
+  done := false
+  for !done {
+    done = true
+    for i:=1; i<len(a); i++ {
+      if a[i-1] > a[i] {
+        exch(a, i-1, i)
+        done = false
+      }
+    }
+  }
+}
+
 func ShellSort(a []int) {
   for h:=len(a)/3; h>=1; h/=3 {
     for i:=h; i<len(a); i++ {
@@ -48,22 +65,25 @@ func ShellSort(a []int) {
   }
 }
 
-var Aux []int
+// MergeSort and helper methods
 func MergeSort(a []int) {
-  Aux = make([]int, len(a), len(a))
-  sortRecur(a, 0, len(a)-1)
+  aux := make([]int, len(a), len(a))
+  mergeRecur(a, aux, 0, len(a)-1)
 }
 
 func MergeBUSort(a []int) {
-  Aux = make([]int, len(a), len(a))
+  aux := make([]int, len(a), len(a))
   for sz:=1; sz<len(a); sz*=2 {
     for lo:=0; lo<len(a)-sz; lo+=sz*2 {
-      merge(a, lo, lo+sz-1, min(lo+sz*2-1, len(a)-1))
+      mid := lo+sz-1
+      if mid > 0 && a[mid-1] <= a[mid] {
+        merge(a, aux, lo, mid, min(lo+sz*2-1, len(a)-1))
+      }
     }
   }
 }
 
-func sortRecur(a []int, lo, hi int) {
+func mergeRecur(a, aux []int, lo, hi int) {
   if hi <= lo {
     return
   }
@@ -76,35 +96,68 @@ func sortRecur(a []int, lo, hi int) {
     }
   } else {
     mid := lo + (hi - lo) / 2
-    sortRecur(a, lo, mid)
-    sortRecur(a, mid + 1, hi)
-    merge(a, lo, mid, hi)
+    mergeRecur(a, aux, lo, mid)
+    mergeRecur(a, aux, mid + 1, hi)
+    merge(a, aux, lo, mid, hi)
   }
 }
 
-func merge(a []int, lo, mid, hi int) {
+func merge(a, aux []int, lo, mid, hi int) {
   i := lo
   j := mid + 1
   for k:=lo; k<=hi; k++ {
-    Aux[k] = a[k]
+    aux[k] = a[k]
   }
   for k:=lo; k<=hi; k++ {
     if i > mid {
-      a[k] = Aux[j]
+      a[k] = aux[j]
       j++
     } else if j > hi {
-      a[k] = Aux[i]
+      a[k] = aux[i]
       i++
-    } else if less(Aux[j], Aux[i]) {
-      a[k] = Aux[j]
+    } else if less(aux[j], aux[i]) {
+      a[k] = aux[j]
       j++
     } else {
-      a[k] = Aux[i]
+      a[k] = aux[i]
       i++
     }
   }
 }
 
+func QuickSort(a []int) {
+  var quickRecur func([]int, int, int)
+  quickRecur = func(a []int, lo, hi int) {
+    if lo >= hi { return }
+    if (hi-lo) == 1 {
+      if a[lo] > a[hi] {
+        exch(a, lo, hi)
+        return
+      }
+    }
+    lp := lo+1
+    rp := hi
+    pivot := (lo + hi) / 2
+    exch(a, lo, pivot)
+    for rp > lp {
+      for lp <= hi && a[lp] <= a[lo] {
+        lp++
+      }
+      for rp >= lo && a[rp] > a[lo] {
+        rp--
+      }
+      if lp < rp {
+        exch(a, lp, rp)
+      }
+    }
+    exch(a, rp, lo)
+    quickRecur(a, lo, rp-1)
+    quickRecur(a, rp+1, hi)
+  }
+  quickRecur(a, 0, len(a)-1)
+}
+
+// Helper Functions used by many of the algorithms
 func less(a, b int) bool {
   return a < b
 }
@@ -121,6 +174,12 @@ func exch(a []int, i, j int) {
   a[i], a[j] = a[j], a[i]
 }
 
+// Testing Helper Functions
+// Creating random numbers and arrays to sort
+func randInRange(maxRange int) int {
+  return int(rand.Float32() * float32(maxRange))
+}
+
 func randomArray(size, maxRange int) []int {
   rarr := make([]int, size, size)
   for i:=0; i<len(rarr); i++ {
@@ -133,11 +192,11 @@ func randomArray(size, maxRange int) []int {
 func sampleSort(alg string, size int) float64 {
   rarr := randomArray(size, size)
   if alg == "Selection" {
-  t := time.Now()
+    t := time.Now()
     SelectionSort(rarr)
     return time.Since(t).Seconds()
   } else if alg == "Insertion" {
-  t := time.Now()
+    t := time.Now()
     InsertionSort(rarr)
     return time.Since(t).Seconds()
   } else if alg == "Shell" {
@@ -151,6 +210,14 @@ func sampleSort(alg string, size int) float64 {
   } else if alg == "MergeBU" {
     t := time.Now()
     MergeBUSort(rarr)
+    return time.Since(t).Seconds()
+  } else if alg == "Bubble" {
+    t := time.Now()
+    BubbleSort(rarr)
+    return time.Since(t).Seconds()
+  } else if alg == "Quick" {
+    t := time.Now()
+    QuickSort(rarr)
     return time.Since(t).Seconds()
   }
   return -1.0
@@ -179,7 +246,7 @@ func compareSort(alg1, alg2 string, size, samples int) string {
     slower = alg1
     ratio = t1 / t2
   }
-  result := fmt.Sprintf("For %d random ints:\n%s is %0.3f faster than %s", size, faster, ratio, slower)
+  result := fmt.Sprintf("For %d random ints:\n%s is %0.3f times faster than %s", size, faster, ratio, slower)
   return result
 }
 
