@@ -11,9 +11,11 @@ func main() {
 
   fmt.Println("Hello, world!")
 
-  x := randomArray(1000000, 1000000)
+  x := randomArray(1000, 1000)
   QuickSort(x)
-  fmt.Println(x[0:20])
+  fmt.Println(x[0:50])
+
+  fmt.Println(validateAlg("QuickSort", 1000))
 
   fmt.Println(compareSort("Quick", "Merge", 1000000, 1))
 
@@ -134,21 +136,16 @@ func QuickSort(a []int) {
         exch(a, lo, hi)
         return
       }
+      return
     }
     lp := lo+1
     rp := hi
     pivot := (lo + hi) / 2
     exch(a, lo, pivot)
     for rp > lp {
-      for lp <= hi && a[lp] <= a[lo] {
-        lp++
-      }
-      for rp >= lo && a[rp] > a[lo] {
-        rp--
-      }
-      if lp < rp {
-        exch(a, lp, rp)
-      }
+      for lp <= hi && a[lp] <= a[lo] { lp++ }
+      for rp >= lo && a[rp] > a[lo] { rp-- }
+      if lp < rp { exch(a, lp, rp) }
     }
     exch(a, rp, lo)
     quickRecur(a, lo, rp-1)
@@ -189,38 +186,31 @@ func randomArray(size, maxRange int) []int {
   return rarr
 }
 
+func getSort(alg string) func([]int) {
+  if alg == "Selection" {
+    return SelectionSort
+  } else if alg == "Insertion" {
+    return InsertionSort
+  } else if alg == "Shell" {
+    return ShellSort
+  } else if alg == "Merge" {
+    return MergeSort
+  } else if alg == "MergeBU" {
+    return MergeBUSort
+  } else if alg == "Bubble" {
+    return BubbleSort
+  } else if alg == "Quick" {
+    return QuickSort
+  }
+  return MergeSort
+}
+
 func sampleSort(alg string, size int) float64 {
   rarr := randomArray(size, size)
-  if alg == "Selection" {
-    t := time.Now()
-    SelectionSort(rarr)
-    return time.Since(t).Seconds()
-  } else if alg == "Insertion" {
-    t := time.Now()
-    InsertionSort(rarr)
-    return time.Since(t).Seconds()
-  } else if alg == "Shell" {
-    t := time.Now()
-    ShellSort(rarr)
-    return time.Since(t).Seconds()
-  } else if alg == "Merge" {
-    t := time.Now()
-    MergeSort(rarr)
-    return time.Since(t).Seconds()
-  } else if alg == "MergeBU" {
-    t := time.Now()
-    MergeBUSort(rarr)
-    return time.Since(t).Seconds()
-  } else if alg == "Bubble" {
-    t := time.Now()
-    BubbleSort(rarr)
-    return time.Since(t).Seconds()
-  } else if alg == "Quick" {
-    t := time.Now()
-    QuickSort(rarr)
-    return time.Since(t).Seconds()
-  }
-  return -1.0
+  sort := getSort(alg)
+  t := time.Now()
+  sort(rarr)
+  return time.Since(t).Seconds()
 }
 
 func nSampleSort(alg string, size, samples int) float64 {
@@ -248,5 +238,17 @@ func compareSort(alg1, alg2 string, size, samples int) string {
   }
   result := fmt.Sprintf("For %d random ints:\n%s is %0.3f times faster than %s", size, faster, ratio, slower)
   return result
+}
+
+func validateAlg(alg string, size int) bool {
+  sort := getSort(alg)
+  rarr := randomArray(size, size)
+  sort(rarr)
+  for i:=0; i<len(rarr)-1; i++ {
+    if rarr[i+1] < rarr[i] {
+      return false
+    }
+  }
+  return true
 }
 
